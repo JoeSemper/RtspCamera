@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.joesemper.rtspcamera.ui.navigation.AppNavHost
 import com.joesemper.rtspcamera.ui.theme.RtspCameraTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,7 +33,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Stream")
+//                    Greeting("Stream")
+                    AppNavHost()
                 }
             }
         }
@@ -65,12 +67,4 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
 
 
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    RtspCameraTheme {
-        Greeting("Android")
-    }
 }
