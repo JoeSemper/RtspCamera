@@ -15,14 +15,12 @@ const val STREAM_ROUTE: String = "stream"
 
 @Composable
 fun AppNavHost(
-    startDestination: String = HOME_ROUTE
+    startDestination: String = STREAM_ROUTE
 ) {
 
     val navController = rememberNavController()
 
-    Scaffold(
-
-    ) { innerPadding ->
+    Scaffold() { innerPadding ->
         NavHost(
             modifier = Modifier.padding(innerPadding),
             navController = navController,
@@ -31,14 +29,19 @@ fun AppNavHost(
             composable(route = HOME_ROUTE) {
                 HomeScreen(
                     navigateToStream = {
-                        navController.navigate(STREAM_ROUTE)
+                        navController.navigate(route = STREAM_ROUTE) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
+
             composable(route = STREAM_ROUTE) {
                 StreamScreen(
                     navigateHome = {
-                        navController.navigate(HOME_ROUTE)
+                        navController.navigate(HOME_ROUTE){
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
