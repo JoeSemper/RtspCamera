@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.alexvas.rtsp.widget.RtspSurfaceView
+import com.joesemper.rtspcamera.R
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.getViewModel
 
@@ -45,9 +46,9 @@ fun StreamScreen(
     viewModel: StreamViewModel = getViewModel()
 ) {
 
-    val uri = remember(viewModel.uiState) { Uri.parse(viewModel.uiState) }
+    val state = viewModel.uiState
 
-    var status by remember { mutableStateOf("") }
+    var status = viewModel.uiState.status.getString()
 
     var showLayout by remember { mutableStateOf(true) }
 
@@ -55,19 +56,21 @@ fun StreamScreen(
 
     val configuration = LocalConfiguration.current
 
-    val videoViewModifier = when (configuration.orientation) {
-        Configuration.ORIENTATION_LANDSCAPE -> {
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(ratio = 1f, matchHeightConstraintsFirst = true)
-                .border(width = 0.1.dp, color = Color.Red)
-        }
+    val videoViewModifier = remember(configuration.orientation) {
+        when (configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(ratio = 1f, matchHeightConstraintsFirst = true)
+                    .border(width = 0.1.dp, color = Color.Red)
+            }
 
-        else -> {
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(ratio = 1f, matchHeightConstraintsFirst = false)
-                .border(width = 0.1.dp, color = Color.Red)
+            else -> {
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(ratio = 1f, matchHeightConstraintsFirst = false)
+                    .border(width = 0.1.dp, color = Color.Red)
+            }
         }
     }
 
@@ -75,27 +78,32 @@ fun StreamScreen(
     val listener = object : RtspSurfaceView.RtspStatusListener {
         override fun onRtspStatusConnecting() {
             super.onRtspStatusConnecting()
-            status = "Connecting"
+            viewModel.onConnecting()
         }
 
         override fun onRtspStatusDisconnected() {
             super.onRtspStatusDisconnected()
-            status = "Disconnected"
+            viewModel.onError(context.getString(R.string.disconnected))
         }
 
         override fun onRtspStatusFailedUnauthorized() {
             super.onRtspStatusFailedUnauthorized()
-            status = "Unauthorized"
+            viewModel.onError(context.getString(R.string.unauthorized))
         }
 
         override fun onRtspStatusFailed(message: String?) {
             super.onRtspStatusFailed(message)
-            status = message ?: "Failed"
+            viewModel.onError(message ?: "")
         }
 
         override fun onRtspStatusConnected() {
             super.onRtspStatusConnected()
-            status = "Connected"
+            viewModel.onConnected()
+        }
+
+        override fun onRtspFirstFrameRendered() {
+            super.onRtspFirstFrameRendered()
+            status = "First frame rendered"
         }
 
         override fun onRtspStatusDisconnecting() {
@@ -106,19 +114,27 @@ fun StreamScreen(
 
 
     Box(
-        modifier = Modifier.fillMaxSize().background(color = Color.Black),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        AndroidView(
-            modifier = videoViewModifier,
-            factory = { context ->
-                RtspSurfaceView(context).apply {
-                    init(uri, null, null)
-                    setStatusListener(listener)
-                    start(requestVideo = true, requestAudio = false)
+        if (state.status != StreamStatus.Loading) {
+
+            val uri = remember(viewModel.uiState) { Uri.parse(state.currentUri) }
+
+            AndroidView(
+                modifier = videoViewModifier,
+                factory = { context ->
+                    RtspSurfaceView(context).apply {
+                        init(uri, null, null)
+                        setStatusListener(listener)
+                        start(requestVideo = true, requestAudio = false)
+                    }
                 }
-            }
-        )
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

@@ -18,7 +18,7 @@ class RtspDataStoreImpl(private val dataStore: DataStore<Preferences>) : RtspDat
     companion object {
 
         private val CURRENT_STREAM_URI = stringPreferencesKey("current_stream_uri")
-        private const val DEFAULT_CURRENT_STREAM_URI = "default"
+        private const val DEFAULT_CURRENT_STREAM_URI = ""
 
     }
 
