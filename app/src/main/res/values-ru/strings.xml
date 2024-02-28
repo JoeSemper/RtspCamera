@@ -10,4 +10,6 @@
     <string name="disconnected">Disconnected</string>
     <string name="unauthorized">Unauthorized</string>
     <string name="loading">Loading</string>
+    <string name="disconnecting">Disconnecting</string>
+    <string name="ready_to_connect">Ready to connect</string>
 </resources>
