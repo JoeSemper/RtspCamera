@@ -11,4 +11,7 @@
     <string name="loading">Loading</string>
     <string name="disconnecting">Disconnecting</string>
     <string name="ready_to_connect">Ready to connect</string>
+    <string name="log">Log</string>
+    <string name="connection_log">Connection log</string>
+    <string name="settings">Settings</string>
 </resources>

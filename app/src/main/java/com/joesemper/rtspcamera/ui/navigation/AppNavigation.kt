@@ -31,6 +31,7 @@ fun AppNavHost(
                     navigateToStream = {
                         navController.navigate(route = STREAM_ROUTE) {
                             launchSingleTop = true
+                            popUpTo(STREAM_ROUTE)
                         }
                     }
                 )
@@ -41,6 +42,7 @@ fun AppNavHost(
                     navigateHome = {
                         navController.navigate(HOME_ROUTE){
                             launchSingleTop = true
+                            popUpTo(STREAM_ROUTE)
                         }
                     }
                 )

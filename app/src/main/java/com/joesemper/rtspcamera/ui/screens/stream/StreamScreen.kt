@@ -16,16 +16,16 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,7 +64,7 @@ fun StreamScreen(
 ) {
 
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
-    val status = state.status.getString()
+    val status = state.status.getText()
 
     var showLayout by remember { mutableStateOf(true) }
 
@@ -104,7 +105,7 @@ fun StreamScreen(
 
     val streamView: MutableState<RtspSurfaceView?> = remember(context) { mutableStateOf(null) }
 
-    DisposableEffect(key1 = state.currentUri, key2 = streamView) {
+    DisposableEffect(key1 = state.currentUri, key2 = streamView.value) {
 
         if (state.currentUri.isNotEmpty()) {
             streamView.value?.apply {
@@ -134,22 +135,32 @@ fun StreamScreen(
                 onDismissRequest = {
                     showBottomSheet = false
                 },
-                sheetState = sheetState
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(onClick = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) {
-                                showBottomSheet = false
-                            }
+                sheetState = sheetState,
+                dragHandle = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(R.string.connection_log),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        IconButton(
+                            modifier = Modifier.size(32.dp),
+                            onClick = {
+                                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    if (!sheetState.isVisible) {
+                                        showBottomSheet = false
+                                    }
+                                }
+                            }) {
+                            Icon(imageVector = Icons.Default.Clear, contentDescription = null)
                         }
-                    }) {
-                        Icon(imageVector = Icons.Default.Clear, contentDescription = null)
                     }
                 }
+            ) {
 
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
@@ -157,12 +168,14 @@ fun StreamScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.statusLog.size) {
-                        Text(text = state.statusLog[it].getString())
+                        Text(
+                            text = state.statusLog[it].run { timeText + " " + getText() },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
         }
-
 
         Box(
             modifier = Modifier
