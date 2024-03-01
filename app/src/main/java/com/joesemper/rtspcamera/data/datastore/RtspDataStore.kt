@@ -13,4 +13,5 @@ interface RtspDataStore {
     suspend fun setUsername(username: String)
     suspend fun setPassword(password: String)
     suspend fun setAspectRatio(ratio: Float)
+    suspend fun setEnableReconnectTimeout(enable: Boolean)
 }

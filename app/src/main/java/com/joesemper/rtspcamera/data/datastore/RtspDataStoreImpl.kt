@@ -38,6 +38,9 @@ class RtspDataStoreImpl(private val dataStore: DataStore<Preferences>) : RtspDat
         private val ASPECT_RATIO = floatPreferencesKey("aspect_ratio")
         private const val DEFAULT_ASPECT_RATIO = 1f
 
+        private val ENABLE_RECONNECT_TIMEOUT = booleanPreferencesKey("enable_reconnect_timeout")
+        private const val DEFAULT_ENABLE_RECONNECT_TIMEOUT = false
+
     }
 
     override fun getCurrentStreamUri(): Flow<String> = dataStore.data.map { preferences ->
@@ -56,8 +59,10 @@ class RtspDataStoreImpl(private val dataStore: DataStore<Preferences>) : RtspDat
             enableVideo = preferences[ENABLE_VIDEO] ?: DEFAULT_ENABLE_VIDEO,
             enableAudio = preferences[ENABLE_AUDIO] ?: DEFAULT_ENABLE_AUDIO,
             username = preferences[USERNAME] ?: DEFAULT_USERNAME,
-            password = preferences[PASSWORD]?: DEFAULT_PASSWORD,
-            ratio = preferences[ASPECT_RATIO] ?: DEFAULT_ASPECT_RATIO
+            password = preferences[PASSWORD] ?: DEFAULT_PASSWORD,
+            ratio = preferences[ASPECT_RATIO] ?: DEFAULT_ASPECT_RATIO,
+            enableReconnectTimeout = preferences[ENABLE_RECONNECT_TIMEOUT]
+                ?: DEFAULT_ENABLE_RECONNECT_TIMEOUT
         )
     }
 
@@ -66,9 +71,10 @@ class RtspDataStoreImpl(private val dataStore: DataStore<Preferences>) : RtspDat
             settings[CURRENT_STREAM_URI] = newSettings.streamLink
             settings[ENABLE_VIDEO] = newSettings.enableVideo
             settings[ENABLE_AUDIO] = newSettings.enableAudio
-            settings[USERNAME] = newSettings.username ?: ""
-            settings[PASSWORD] = newSettings.password ?: ""
+            settings[USERNAME] = newSettings.username
+            settings[PASSWORD] = newSettings.password
             settings[ASPECT_RATIO] = newSettings.ratio
+            settings[ENABLE_RECONNECT_TIMEOUT] = newSettings.enableReconnectTimeout
         }
     }
 
@@ -99,6 +105,12 @@ class RtspDataStoreImpl(private val dataStore: DataStore<Preferences>) : RtspDat
     override suspend fun setAspectRatio(ratio: Float) {
         dataStore.edit { settings ->
             settings[ASPECT_RATIO] = ratio
+        }
+    }
+
+    override suspend fun setEnableReconnectTimeout(enable: Boolean) {
+        dataStore.edit { settings ->
+            settings[ENABLE_RECONNECT_TIMEOUT] = enable
         }
     }
 }

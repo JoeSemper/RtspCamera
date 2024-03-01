@@ -19,10 +19,10 @@ class HomeViewModel(
 
     private fun loadData() {
         viewModelScope.launch {
-            datastore.getCurrentStreamUri().collect { settings ->
+            datastore.getCurrentSettings().collect { settings ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    settings = StreamSettings()
+                    settings = settings
                 )
             }
         }
@@ -53,7 +53,7 @@ class HomeViewModel(
     }
 
     fun updatePassword(password: String) {
-        viewModelScope.launch{
+        viewModelScope.launch {
             datastore.setPassword(password)
         }
     }
@@ -61,6 +61,12 @@ class HomeViewModel(
     fun updateRatio(ratio: Float) {
         viewModelScope.launch {
             datastore.setAspectRatio(ratio)
+        }
+    }
+
+    fun updateEnableReconnectTimeout(enable: Boolean) {
+        viewModelScope.launch {
+            datastore.setEnableReconnectTimeout(enable)
         }
     }
 }
@@ -74,12 +80,13 @@ data class StreamSettings(
     val streamLink: String = "",
     val enableVideo: Boolean = true,
     val enableAudio: Boolean = true,
-    val username: String? = null,
-    val password: String? = null,
-    val ratio: Float = 1f
+    val username: String = "",
+    val password: String = "",
+    val ratio: Float = 1f,
+    val enableReconnectTimeout: Boolean = false
 )
 
-enum class AspectRatio(val w: Int, h: Int) {
+enum class AspectRatio(val w: Int, val h: Int) {
     ONE_TO_ONE(1, 1),
     FOUR_TO_THREE(4, 3),
     FIVE_TO_FOUR(5, 4),
