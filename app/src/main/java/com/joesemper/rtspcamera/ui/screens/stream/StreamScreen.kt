@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -63,8 +64,8 @@ fun StreamScreen(
     viewModel: StreamViewModel = getViewModel()
 ) {
 
-    val state = viewModel.uiState.collectAsStateWithLifecycle().value
-    val status = state.status.getText()
+    val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    val status = uiState.status.getText()
 
     var showLayout by remember { mutableStateOf(true) }
 
@@ -74,12 +75,12 @@ fun StreamScreen(
     val listener = object : RtspSurfaceView.RtspStatusListener {
         override fun onRtspStatusConnecting() {
             super.onRtspStatusConnecting()
-            viewModel.updateStatus(StreamStatus.Connecting)
+            viewModel.updateStatus(StreamStatus.Connecting())
         }
 
         override fun onRtspStatusDisconnected() {
             super.onRtspStatusDisconnected()
-            viewModel.updateStatus(StreamStatus.Disconnected)
+            viewModel.updateStatus(StreamStatus.Disconnected())
         }
 
         override fun onRtspStatusFailedUnauthorized() {
@@ -94,25 +95,37 @@ fun StreamScreen(
 
         override fun onRtspStatusConnected() {
             super.onRtspStatusConnected()
-            viewModel.updateStatus(StreamStatus.Connected)
+            viewModel.updateStatus(StreamStatus.Connected())
         }
 
         override fun onRtspStatusDisconnecting() {
             super.onRtspStatusDisconnecting()
-            viewModel.updateStatus(StreamStatus.Disconnecting)
+            viewModel.updateStatus(StreamStatus.Disconnecting())
         }
     }
 
     val streamView: MutableState<RtspSurfaceView?> = remember(context) { mutableStateOf(null) }
+    var reconnect by remember { mutableStateOf(false) }
 
-    DisposableEffect(key1 = state.currentUri, key2 = streamView.value) {
+    DisposableEffect(
+        key1 = uiState.settings.streamLink,
+        key2 = streamView.value,
+        key3 = reconnect,
+    ) {
 
-        if (state.currentUri.isNotEmpty()) {
+        if (uiState.settings.streamLink.isNotEmpty()) {
             streamView.value?.apply {
-                val uri = Uri.parse(state.currentUri)
-                init(uri, null, null)
+                val uri = Uri.parse(uiState.settings.streamLink)
+                init(
+                    uri = uri,
+                    username = uiState.settings.username.ifBlank { null },
+                    password = uiState.settings.password.ifBlank { null }
+                )
                 setStatusListener(listener)
-                start(requestVideo = true, requestAudio = false)
+                start(
+                    requestVideo = uiState.settings.enableVideo,
+                    requestAudio = uiState.settings.enableAudio
+                )
             }
         }
 
@@ -121,10 +134,18 @@ fun StreamScreen(
         }
     }
 
+    LaunchedEffect(key1 = status) {
+        if (uiState.status is StreamStatus.Disconnected && uiState.settings.enableReconnectTimeout) {
+            delay(5000)
+            viewModel.incrementReconnectCount()
+            viewModel.updateStatus(StreamStatus.Reconnecting(uiState.reconnectCount))
+            reconnect = !reconnect
+        }
+    }
+
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
-
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -147,6 +168,7 @@ fun StreamScreen(
                             text = stringResource(R.string.connection_log),
                             style = MaterialTheme.typography.titleMedium
                         )
+
                         IconButton(
                             modifier = Modifier.size(32.dp),
                             onClick = {
@@ -158,6 +180,8 @@ fun StreamScreen(
                             }) {
                             Icon(imageVector = Icons.Default.Clear, contentDescription = null)
                         }
+
+
                     }
                 }
             ) {
@@ -167,9 +191,9 @@ fun StreamScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(state.statusLog.size) {
+                    items(uiState.statusLog.size) {
                         Text(
-                            text = state.statusLog[it].run { timeText + " " + getText() },
+                            text = uiState.statusLog[it].run { timeText + " " + getText() },
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -189,7 +213,7 @@ fun StreamScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(
-                        ratio = 1f,
+                        ratio = uiState.settings.ratio,
                         matchHeightConstraintsFirst = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                     )
                     .border(
@@ -237,16 +261,33 @@ fun StreamScreen(
                             )
                         }
 
-                        IconButton(
-                            modifier = Modifier.alpha(0.8f),
-                            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
-                            onClick = { navigateHome() }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = null
-                            )
+                            IconButton(
+                                modifier = Modifier.alpha(0.8f),
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                                onClick = { reconnect = !reconnect }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null
+                                )
+                            }
+
+                            IconButton(
+                                modifier = Modifier.alpha(0.8f),
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                                onClick = { navigateHome() }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = null
+                                )
+                            }
                         }
+
                     }
                 }
 
@@ -254,6 +295,5 @@ fun StreamScreen(
 
         }
     }
-
 
 }

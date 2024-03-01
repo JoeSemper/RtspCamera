@@ -29,4 +29,5 @@
     <string name="enable_audio">Enable audio</string>
     <string name="aspect_ratio">Aspect ratio</string>
     <string name="enable_reconnect_timeout">Enable reconnect timeout</string>
+    <string name="reconnecting">Reconnecting</string>
 </resources>

@@ -1,11 +1,14 @@
 package com.joesemper.rtspcamera.ui.screens.stream
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.joesemper.rtspcamera.R
 import com.joesemper.rtspcamera.data.datastore.RtspDataStore
+import com.joesemper.rtspcamera.ui.screens.home.StreamSettings
 import com.joesemper.rtspcamera.utils.unixTimeToHoursMinutesSeconds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,30 +28,36 @@ class StreamViewModel(
 
     private fun loadData() {
         viewModelScope.launch {
-            datastore.getCurrentStreamUri().collect { uri ->
-                _uiState.value = if (uri.isEmpty()) {
-                    _uiState.value.copy(
-                        statusLog = _uiState.value.statusLog.plus(StreamStatus.Error("Empty Uri"))
-                    )
-                } else {
-                    _uiState.value.copy(
-                        currentUri = uri,
-                        statusLog = _uiState.value.statusLog.plus(StreamStatus.Ready)
-                    )
-                }
+            datastore.getCurrentSettings().collect { settings ->
+                _uiState.value = _uiState.value.copy(
+                    settings = settings,
+                    statusLog = if (settings.streamLink.isEmpty()) {
+                        _uiState.value.statusLog.plus(StreamStatus.Error("Empty Uri"))
+                    } else {
+                        _uiState.value.statusLog.plus(StreamStatus.Ready())
+                    }
+                )
             }
         }
     }
 
     fun updateStatus(newStatus: StreamStatus) {
-        _uiState.value = _uiState.value.copy(statusLog = _uiState.value.statusLog.plus(newStatus))
+        _uiState.value = _uiState.value.copy(
+            statusLog = _uiState.value.statusLog.plus(newStatus).sortedBy { it.date })
+    }
+
+    fun incrementReconnectCount() {
+        _uiState.value = _uiState.value.copy(
+            reconnectCount = _uiState.value.reconnectCount + 1
+        )
     }
 
 }
 
 data class StreamScreenState(
-    val currentUri: String = "",
-    val statusLog: List<StreamStatus> = listOf(StreamStatus.Loading),
+    val settings: StreamSettings = StreamSettings(),
+    val statusLog: List<StreamStatus> = listOf(StreamStatus.Loading()),
+    val reconnectCount: Int = 0
 ) {
     val status: StreamStatus
         get() = statusLog.maxByOrNull { it.date }!!
@@ -60,12 +69,12 @@ sealed class StreamStatus {
     val date = Calendar.getInstance().time.time
     val timeText = unixTimeToHoursMinutesSeconds(date)
 
-    object Loading : StreamStatus() {
+    class Loading : StreamStatus() {
         @Composable
         override fun getText(): String = stringResource(R.string.loading)
     }
 
-    object Ready : StreamStatus() {
+    class Ready : StreamStatus() {
         @Composable
         override fun getText(): String = stringResource(R.string.ready_to_connect)
     }
@@ -75,25 +84,30 @@ sealed class StreamStatus {
         override fun getText(): String = massage.ifEmpty { stringResource(R.string.error) }
     }
 
-    object Connecting : StreamStatus() {
+    class Connecting : StreamStatus() {
         @Composable
         override fun getText(): String = stringResource(R.string.connecting)
     }
 
-    object Disconnected : StreamStatus() {
+    class Disconnected : StreamStatus() {
         @Composable
         override fun getText(): String = stringResource(id = R.string.disconnected)
     }
 
-    object Disconnecting : StreamStatus() {
+    class Disconnecting : StreamStatus() {
         @Composable
         override fun getText(): String = stringResource(R.string.disconnecting)
     }
 
-    object Connected : StreamStatus() {
+    class Connected : StreamStatus() {
         @Composable
         override fun getText(): String = stringResource(R.string.connected)
 
+    }
+
+    class Reconnecting(val count: Int) : StreamStatus() {
+        @Composable
+        override fun getText(): String = stringResource(R.string.reconnecting) + ":" + count
     }
 }
 
